@@ -78,11 +78,25 @@
         <div class="container">
             <!-- 服务器选择 -->
             <div class="card">
-                <div class="card-body" style="display:flex;gap:12px;align-items:center;">
-                    <span class="material-symbols-outlined" style="color:var(--md-primary)">storage</span>
-                    <select id="browserServerSelect" class="text-field" style="flex:1">
-                        <option value="">请选择服务器...</option>
-                    </select>
+                <div class="card-body" style="display:flex;flex-direction:column;gap:12px;">
+                    <div style="display:flex;gap:12px;align-items:center;">
+                        <span class="material-symbols-outlined" style="color:var(--md-primary)">storage</span>
+                        <select id="browserServerSelect" class="text-field" style="flex:1">
+                            <option value="">请选择服务器...</option>
+                        </select>
+                    </div>
+                    
+                    <!-- 发现与搜索区 -->
+                    <div id="discoveryArea" style="display:none;flex-direction:column;gap:12px;">
+                        <div style="display:flex;gap:8px;align-items:center;">
+                            <input type="text" class="text-field" id="searchInput" placeholder="搜索歌手、专辑、歌曲..." style="flex:1">
+                            <button class="btn-filled" id="searchBtn" style="padding:0 16px;">搜索</button>
+                        </div>
+                        <div class="chips-container" style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;">
+                            <button class="chip" id="chipStarred"><span class="material-symbols-outlined" style="font-size:16px;">favorite</span> 我的收藏</button>
+                            <button class="chip" id="chipRandom"><span class="material-symbols-outlined" style="font-size:16px;">shuffle</span> 随便听听</button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -90,10 +104,13 @@
             <div class="card" style="margin-top:16px">
                 <div class="card-header" style="padding-bottom:8px">
                     <div style="display:flex;align-items:center;gap:8px;width:100%">
-                        <button class="btn-icon" id="browserUpBtn" title="返回上一级">
+                        <button class="btn-icon" id="browserUpBtn" title="返回上一级" style="display:none;">
                             <span class="material-symbols-outlined">arrow_upward</span>
                         </button>
                         <div style="flex:1;font-size:14px;color:var(--md-on-surface);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="browserPathDisplay">Artists</div>
+                        <button class="btn-text" id="toggleSelectModeBtn" style="display:none;">
+                            <span class="material-symbols-outlined">checklist</span> 多选
+                        </button>
                     </div>
                 </div>
                 <div class="card-body" id="browserList" style="padding-top:0">
@@ -115,8 +132,83 @@
         </button>
     </nav>
 
+    <!-- FAB (Floating Action Bar) -->
+    <div id="fabContainer" class="fab-container">
+        <div style="display:flex;align-items:center;gap:12px;width:100%;">
+            <span id="fabSelectionCount" style="font-weight:500;font-size:14px;flex:1;">已选 0 项</span>
+            <button class="btn-text" id="fabCancelBtn" style="color:var(--md-on-surface)">取消</button>
+            <button class="btn-filled" id="fabImportBtn">
+                <span class="material-symbols-outlined" style="font-size:18px;">cloud_download</span> 直接入库
+            </button>
+            <button class="btn-filled" id="fabPlaylistBtn" style="background:var(--md-secondary);color:var(--md-on-secondary)">
+                <span class="material-symbols-outlined" style="font-size:18px;">playlist_add</span> 建歌单
+            </button>
+        </div>
+    </div>
+
     <!-- Snackbar -->
     <div id="snackbar" class="snackbar"></div>
+
+    <!-- Edit Server Dialog -->
+    <div id="editDialog" class="dialog-overlay">
+        <div class="dialog" style="max-width: 400px;">
+            <div class="dialog-title">编辑服务器</div>
+            <div class="dialog-content">
+                <div class="form-group">
+                    <label class="form-label">配置名称 (不可改)</label>
+                    <input type="text" class="text-field" id="editName" disabled style="opacity: 0.7; cursor: not-allowed;">
+                </div>
+                <div class="form-group" style="margin-top:12px">
+                    <label class="form-label">服务器地址</label>
+                    <input type="text" class="text-field" id="editUrl">
+                </div>
+                <div class="form-group" style="margin-top:12px">
+                    <label class="form-label">用户名</label>
+                    <input type="text" class="text-field" id="editUsername">
+                </div>
+                <div class="form-group" style="margin-top:12px">
+                    <label class="form-label">密码 / Token</label>
+                    <input type="password" class="text-field" id="editPassword" placeholder="留空则保持不变">
+                </div>
+                <div class="form-group" style="margin-top:12px">
+                    <label class="form-label">Salt (选填)</label>
+                    <input type="text" class="text-field" id="editSalt">
+                </div>
+            </div>
+            <div class="dialog-actions">
+                <button class="btn-text" id="cancelEditBtn">取消</button>
+                <button class="btn-filled" id="saveEditBtn">保存修改</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Progress Dialog -->
+    <div id="progressDialog" class="dialog-overlay">
+        <div class="dialog" style="max-width: 320px;text-align:center;">
+            <div class="dialog-title" id="progressTitle">正在处理</div>
+            <div class="dialog-content" style="padding:24px 0;">
+                <div class="spinner"></div>
+                <div id="progressText" style="margin-top:16px;color:var(--md-on-surface-variant);font-size:14px;">请稍候...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- New Playlist Dialog -->
+    <div id="playlistDialog" class="dialog-overlay">
+        <div class="dialog" style="max-width: 320px;">
+            <div class="dialog-title">创建新歌单</div>
+            <div class="dialog-content">
+                <div class="form-group">
+                    <label class="form-label">歌单名称</label>
+                    <input type="text" class="text-field" id="playlistName" placeholder="例如：Subsonic精选">
+                </div>
+            </div>
+            <div class="dialog-actions">
+                <button class="btn-text" id="cancelPlaylistBtn">取消</button>
+                <button class="btn-filled" id="confirmPlaylistBtn">确认</button>
+            </div>
+        </div>
+    </div>
 
     <script type="module" src="static/js/app.js"></script>
 </body>

@@ -2690,3 +2690,115 @@ body {
     white-space: nowrap;
     flex-shrink: 0;
 }
+
+/* UI UX Pro Max Styles */
+.chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 16px;
+    border-radius: 100px;
+    background: var(--md-surface-1);
+    color: var(--md-on-surface);
+    border: 1px solid var(--md-outline-variant);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+}
+.chip:hover {
+    background: var(--md-surface-2);
+    border-color: var(--md-outline);
+}
+.chip.active {
+    background: var(--md-primary-container);
+    color: var(--md-on-primary-container);
+    border-color: transparent;
+}
+
+/* Floating Action Bar */
+.fab-container {
+    position: fixed;
+    bottom: 80px;
+    left: 50%;
+    transform: translate(-50%, 100%);
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--md-outline-variant);
+    border-radius: 100px;
+    padding: 12px 24px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    z-index: 100;
+    opacity: 0;
+    pointer-events: none;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+    width: 90%;
+    max-width: 600px;
+}
+@media (prefers-color-scheme: dark) {
+    .fab-container {
+        background: rgba(30, 41, 59, 0.85); /* slate-800 based */
+        border-color: rgba(255, 255, 255, 0.1);
+    }
+}
+.fab-container.show {
+    transform: translate(-50%, 0);
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* Checkbox */
+.checkbox-custom {
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--md-outline);
+    border-radius: 4px;
+    margin: 0;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+.checkbox-custom:checked {
+    background-color: var(--md-primary);
+    border-color: var(--md-primary);
+}
+.checkbox-custom:checked::after {
+    content: '';
+    position: absolute;
+    left: 6px;
+    top: 2px;
+    width: 5px;
+    height: 10px;
+    border: solid var(--md-on-primary);
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+
+/* Spinner */
+.spinner {
+    width: 36px;
+    height: 36px;
+    border: 3px solid var(--md-surface-2);
+    border-top-color: var(--md-primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto;
+}
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.browser-item {
+    transition: background-color 0.2s ease, transform 0.1s ease;
+}
+.browser-item:active {
+    transform: scale(0.99);
+}
+

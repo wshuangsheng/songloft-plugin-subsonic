@@ -1,7 +1,7 @@
 import { createRouter, jsonResponse, createSearchHandler, createMusicUrlHandler } from '@songloft/plugin-sdk'
 import type { HTTPRequest, SearchResultItem } from '@songloft/plugin-sdk'
 import { getConfigs, saveConfigs, getConfig, SubsonicConfig } from './config'
-import { ping, getIndexes, getMusicDirectory, getStreamUrl, searchSongs } from './client'
+import { ping, getIndexes, getMusicDirectory, getStreamUrl, searchSongs, getStarred, getRandomSongs } from './client'
 
 function parseBody(req: HTTPRequest): any {
   if (!req.body) return {}
@@ -23,16 +23,24 @@ router.get('/lists', async (req: HTTPRequest) => {
   return jsonResponse(configs.map(c => ({
     id: c.name,
     name: c.name,
-    url: c.url
+    url: c.url,
+    username: c.username,
+    salt: c.salt
   })))
 })
 
 // 添加/更新 Subsonic 配置
 router.post('/lists', async (req: HTTPRequest) => {
-  const data = parseBody(req)
+  const data = parseBody(req) as SubsonicConfig
   const configs = await getConfigs()
   const existing = configs.findIndex(c => c.name === data.name)
   if (existing >= 0) {
+    const oldConfig = configs[existing]
+    // 密码留空则保留旧密码配置
+    if (!data.password && !data.token) {
+      data.password = oldConfig.password
+      data.token = oldConfig.token
+    }
     configs[existing] = data
   } else {
     configs.push(data)
@@ -95,7 +103,8 @@ router.get('/lists/:id/items', async (req: HTTPRequest, params) => {
         album: item.album,
         duration: item.duration,
         size: item.size,
-        streamUrl: item.isDir ? '' : getStreamUrl(config, item.id)
+        streamUrl: item.isDir ? '' : getStreamUrl(config, item.id),
+        coverArt: item.coverArt ? getStreamUrl(config, item.coverArt).replace('stream', 'getCoverArt') : undefined
       })))
     }
   } catch (e) {
@@ -104,7 +113,7 @@ router.get('/lists/:id/items', async (req: HTTPRequest, params) => {
 })
 
 // 全局搜索
-router.post('/search', createSearchHandler({
+router.post('/api/search', createSearchHandler({
   search: async (keyword: string, page = 1, pageSize = 20) => {
     const configs = await getConfigs()
     if (configs.length === 0) return []
@@ -126,7 +135,8 @@ router.post('/search', createSearchHandler({
           })
         }
       } catch (e) {
-        // 忽略单个服务器错误
+        // 忽略单个服务器错误，但打印日志方便排查
+        console.error('Subsonic search error for ' + config.name + ':', String(e))
       }
     }))
     
@@ -135,7 +145,7 @@ router.post('/search', createSearchHandler({
 }))
 
 // 播放链接解析
-router.post('/music/url', createMusicUrlHandler({
+router.post('/api/music/url', createMusicUrlHandler({
   resolveUrl: async (sourceData: Record<string, unknown>) => {
     const configName = sourceData.configName as string
     const songId = sourceData.songId as string
@@ -147,5 +157,80 @@ router.post('/music/url', createMusicUrlHandler({
     return getStreamUrl(config, songId)
   }
 }))
+
+// 新增前端 API - 扁平化搜索
+router.get('/lists/:id/search', async (req: HTTPRequest, params) => {
+  const config = await getConfig(params.id)
+  if (!config) return jsonResponse({ error: 'Config not found' }, 404)
+  
+  let keyword = ''
+  if (req.query) {
+    const match = req.query.match(/(?:^|&)q=([^&]*)/)
+    if (match) keyword = decodeURIComponent(match[1])
+  }
+  
+  try {
+    const songs = await searchSongs(config, keyword, 1, 100)
+    return jsonResponse(songs.map(item => ({
+      id: item.id,
+      name: item.title,
+      type: 'file',
+      artist: item.artist,
+      album: item.album,
+      duration: item.duration,
+      size: item.size,
+      streamUrl: getStreamUrl(config, item.id),
+      coverArt: item.coverArt ? getStreamUrl(config, item.coverArt).replace('stream', 'getCoverArt') : undefined
+    })))
+  } catch (e) {
+    return jsonResponse({ error: String(e) }, 500)
+  }
+})
+
+// 新增前端 API - 我的收藏
+router.get('/lists/:id/starred', async (req: HTTPRequest, params) => {
+  const config = await getConfig(params.id)
+  if (!config) return jsonResponse({ error: 'Config not found' }, 404)
+  
+  try {
+    const songs = await getStarred(config)
+    return jsonResponse(songs.map((item: any) => ({
+      id: item.id,
+      name: item.title,
+      type: 'file',
+      artist: item.artist,
+      album: item.album,
+      duration: item.duration,
+      size: item.size,
+      streamUrl: getStreamUrl(config, item.id),
+      coverArt: item.coverArt ? getStreamUrl(config, item.coverArt).replace('stream', 'getCoverArt') : undefined
+    })))
+  } catch (e) {
+    return jsonResponse({ error: String(e) }, 500)
+  }
+})
+
+// 新增前端 API - 随机/随便听听
+router.get('/lists/:id/random', async (req: HTTPRequest, params) => {
+  const config = await getConfig(params.id)
+  if (!config) return jsonResponse({ error: 'Config not found' }, 404)
+  
+  try {
+    const songs = await getRandomSongs(config, 50)
+    return jsonResponse(songs.map((item: any) => ({
+      id: item.id,
+      name: item.title,
+      type: 'file',
+      artist: item.artist,
+      album: item.album,
+      duration: item.duration,
+      size: item.size,
+      streamUrl: getStreamUrl(config, item.id),
+      coverArt: item.coverArt ? getStreamUrl(config, item.coverArt).replace('stream', 'getCoverArt') : undefined
+    })))
+  } catch (e) {
+    return jsonResponse({ error: String(e) }, 500)
+  }
+})
 
 export default router

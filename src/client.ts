@@ -111,3 +111,26 @@ export async function searchSongs(config: SubsonicConfig, keyword: string, page:
   const songs = data['subsonic-response'].searchResult3?.song || []
   return Array.isArray(songs) ? songs : [songs]
 }
+
+export async function getStarred(config: SubsonicConfig): Promise<any[]> {
+  const res = await fetch(buildUrl(config, 'getStarred'))
+  if (!res.ok) throw new Error('Failed to get starred')
+  const data = await res.json()
+  if (data['subsonic-response']?.status !== 'ok') {
+    throw new Error('API Error: ' + JSON.stringify(data))
+  }
+  const songs = data['subsonic-response'].starred?.song || []
+  return Array.isArray(songs) ? songs : [songs]
+}
+
+export async function getRandomSongs(config: SubsonicConfig, size: number = 50): Promise<any[]> {
+  const res = await fetch(buildUrl(config, 'getRandomSongs', { size: String(size) }))
+  if (!res.ok) throw new Error('Failed to get random songs')
+  const data = await res.json()
+  if (data['subsonic-response']?.status !== 'ok') {
+    throw new Error('API Error: ' + JSON.stringify(data))
+  }
+  const songs = data['subsonic-response'].randomSongs?.song || []
+  return Array.isArray(songs) ? songs : [songs]
+}
+
