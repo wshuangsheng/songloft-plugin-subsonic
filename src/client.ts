@@ -56,17 +56,43 @@ export async function ping(config: SubsonicConfig): Promise<boolean> {
 }
 
 export async function getIndexes(config: SubsonicConfig): Promise<any[]> {
-  const res = await fetch(buildUrl(config, 'getIndexes'))
-  if (!res.ok) throw new Error('Failed to get indexes')
-  const data = await res.json()
-  if (data['subsonic-response']?.status !== 'ok') {
-    throw new Error('API Error: ' + JSON.stringify(data))
+  let res = await fetch(buildUrl(config, 'getIndexes'))
+  let data;
+  let useFallback = false;
+
+  if (res.ok) {
+    data = await res.json()
+    if (data['subsonic-response']?.status !== 'ok') {
+      useFallback = true;
+    }
+  } else {
+    useFallback = true;
+  }
+
+  if (useFallback) {
+    res = await fetch(buildUrl(config, 'getArtists'))
+    if (!res.ok) throw new Error('Failed to get indexes or artists')
+    data = await res.json()
+    if (data['subsonic-response']?.status !== 'ok') {
+      throw new Error('API Error: ' + JSON.stringify(data))
+    }
+    
+    const indexes = data['subsonic-response'].artists?.index || []
+    const artists: any[] = []
+    
+    for (const idx of indexes) {
+      if (idx.artist && Array.isArray(idx.artist)) {
+        artists.push(...idx.artist)
+      } else if (idx.artist) {
+        artists.push(idx.artist)
+      }
+    }
+    return artists
   }
   
   const indexes = data['subsonic-response'].indexes?.index || []
   const artists: any[] = []
   
-  // Flatten artists from alphabetical index
   for (const idx of indexes) {
     if (idx.artist && Array.isArray(idx.artist)) {
       artists.push(...idx.artist)
@@ -79,16 +105,59 @@ export async function getIndexes(config: SubsonicConfig): Promise<any[]> {
 }
 
 export async function getMusicDirectory(config: SubsonicConfig, id: string): Promise<any[]> {
-  const res = await fetch(buildUrl(config, 'getMusicDirectory', { id }))
-  if (!res.ok) throw new Error('Failed to get directory')
-  const data = await res.json()
-  if (data['subsonic-response']?.status !== 'ok') {
-    throw new Error('API Error: ' + JSON.stringify(data))
+  let res = await fetch(buildUrl(config, 'getMusicDirectory', { id }))
+  let data;
+  let useFallback = false;
+
+  if (res.ok) {
+    data = await res.json()
+    if (data['subsonic-response']?.status !== 'ok') {
+      useFallback = true;
+    } else {
+      const dir = data['subsonic-response'].directory
+      if (dir && dir.child) {
+        return Array.isArray(dir.child) ? dir.child : [dir.child]
+      }
+      return []
+    }
+  } else {
+    useFallback = true;
   }
-  
-  const dir = data['subsonic-response'].directory
-  if (!dir || !dir.child) return []
-  return Array.isArray(dir.child) ? dir.child : [dir.child]
+
+  if (useFallback) {
+    let fallbackRes = await fetch(buildUrl(config, 'getArtist', { id }))
+    if (fallbackRes.ok) {
+      let fallbackData = await fallbackRes.json()
+      if (fallbackData['subsonic-response']?.status === 'ok' && fallbackData['subsonic-response'].artist) {
+        const artist = fallbackData['subsonic-response'].artist
+        if (artist && artist.album) {
+          const albums = Array.isArray(artist.album) ? artist.album : [artist.album]
+          return albums.map(a => ({ ...a, isDir: true }))
+        }
+        return []
+      }
+    }
+
+    fallbackRes = await fetch(buildUrl(config, 'getAlbum', { id }))
+    if (fallbackRes.ok) {
+      let fallbackData = await fallbackRes.json()
+      if (fallbackData['subsonic-response']?.status === 'ok' && fallbackData['subsonic-response'].album) {
+        const album = fallbackData['subsonic-response'].album
+        if (album && album.song) {
+          const songs = Array.isArray(album.song) ? album.song : [album.song]
+          return songs.map(s => ({ ...s, isDir: false }))
+        }
+        return []
+      }
+    }
+
+    if (data && data['subsonic-response']?.status !== 'ok') {
+      throw new Error('API Error: ' + JSON.stringify(data))
+    }
+    throw new Error('Failed to get directory')
+  }
+
+  return []
 }
 
 export function getStreamUrl(config: SubsonicConfig, id: string): string {
