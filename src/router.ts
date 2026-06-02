@@ -1,7 +1,7 @@
 import { createRouter, jsonResponse, createSearchHandler, createMusicUrlHandler } from '@songloft/plugin-sdk'
 import type { HTTPRequest, SearchResultItem } from '@songloft/plugin-sdk'
 import { getConfigs, saveConfigs, getConfig, SubsonicConfig } from './config'
-import { ping, getIndexes, getMusicDirectory, getStreamUrl, searchSongs, getStarred, getRandomSongs } from './client'
+import { ping, getIndexes, getMusicDirectory, getStreamUrl, searchSongs, getStarred, getRandomSongs, getLyrics } from './client'
 
 function parseBody(req: HTTPRequest): any {
   if (!req.body) return {}
@@ -104,7 +104,10 @@ router.get('/lists/:id/items', async (req: HTTPRequest, params) => {
         duration: item.duration,
         size: item.size,
         streamUrl: item.isDir ? '' : getStreamUrl(config, item.id),
-        coverArt: item.coverArt ? getStreamUrl(config, item.coverArt).replace('stream', 'getCoverArt') : undefined
+        coverArt: item.coverArt ? getStreamUrl(config, item.coverArt).replace('stream', 'getCoverArt') : undefined,
+        lyric: `/api/plugin/songloft-plugin-subsonic/lists/${encodeURIComponent(config.name)}/lyric?artist=${encodeURIComponent(item.artist || '')}&title=${encodeURIComponent(item.title || item.name || '')}`,
+        lyric_source: 'url',
+        lyricUrl: `/api/plugin/songloft-plugin-subsonic/lists/${encodeURIComponent(config.name)}/lyric?artist=${encodeURIComponent(item.artist || '')}&title=${encodeURIComponent(item.title || item.name || '')}`
       })))
     }
   } catch (e) {
@@ -131,7 +134,10 @@ router.post('/api/search', createSearchHandler({
             album: s.album,
             duration: s.duration || 0,
             cover_url: s.coverArt ? getStreamUrl(config, s.coverArt).replace('stream', 'getCoverArt') : undefined,
-            source_data: { configName: config.name, songId: s.id }
+            source_data: { configName: config.name, songId: s.id },
+            lyric: `/api/plugin/songloft-plugin-subsonic/lists/${encodeURIComponent(config.name)}/lyric?artist=${encodeURIComponent(s.artist || '')}&title=${encodeURIComponent(s.title || '')}`,
+            lyric_source: 'url',
+            lyricUrl: `/api/plugin/songloft-plugin-subsonic/lists/${encodeURIComponent(config.name)}/lyric?artist=${encodeURIComponent(s.artist || '')}&title=${encodeURIComponent(s.title || '')}`
           })
         }
       } catch (e) {
@@ -180,7 +186,10 @@ router.get('/lists/:id/search', async (req: HTTPRequest, params) => {
       duration: item.duration,
       size: item.size,
       streamUrl: getStreamUrl(config, item.id),
-      coverArt: item.coverArt ? getStreamUrl(config, item.coverArt).replace('stream', 'getCoverArt') : undefined
+      coverArt: item.coverArt ? getStreamUrl(config, item.coverArt).replace('stream', 'getCoverArt') : undefined,
+      lyric: `/api/plugin/songloft-plugin-subsonic/lists/${encodeURIComponent(config.name)}/lyric?artist=${encodeURIComponent(item.artist || '')}&title=${encodeURIComponent(item.title || item.name || '')}`,
+      lyric_source: 'url',
+      lyricUrl: `/api/plugin/songloft-plugin-subsonic/lists/${encodeURIComponent(config.name)}/lyric?artist=${encodeURIComponent(item.artist || '')}&title=${encodeURIComponent(item.title || item.name || '')}`
     })))
   } catch (e) {
     return jsonResponse({ error: String(e) }, 500)
@@ -203,7 +212,10 @@ router.get('/lists/:id/starred', async (req: HTTPRequest, params) => {
       duration: item.duration,
       size: item.size,
       streamUrl: getStreamUrl(config, item.id),
-      coverArt: item.coverArt ? getStreamUrl(config, item.coverArt).replace('stream', 'getCoverArt') : undefined
+      coverArt: item.coverArt ? getStreamUrl(config, item.coverArt).replace('stream', 'getCoverArt') : undefined,
+      lyric: `/api/plugin/songloft-plugin-subsonic/lists/${encodeURIComponent(config.name)}/lyric?artist=${encodeURIComponent(item.artist || '')}&title=${encodeURIComponent(item.title || item.name || '')}`,
+      lyric_source: 'url',
+      lyricUrl: `/api/plugin/songloft-plugin-subsonic/lists/${encodeURIComponent(config.name)}/lyric?artist=${encodeURIComponent(item.artist || '')}&title=${encodeURIComponent(item.title || item.name || '')}`
     })))
   } catch (e) {
     return jsonResponse({ error: String(e) }, 500)
@@ -226,10 +238,43 @@ router.get('/lists/:id/random', async (req: HTTPRequest, params) => {
       duration: item.duration,
       size: item.size,
       streamUrl: getStreamUrl(config, item.id),
-      coverArt: item.coverArt ? getStreamUrl(config, item.coverArt).replace('stream', 'getCoverArt') : undefined
+      coverArt: item.coverArt ? getStreamUrl(config, item.coverArt).replace('stream', 'getCoverArt') : undefined,
+      lyric: `/api/plugin/songloft-plugin-subsonic/lists/${encodeURIComponent(config.name)}/lyric?artist=${encodeURIComponent(item.artist || '')}&title=${encodeURIComponent(item.title || item.name || '')}`,
+      lyric_source: 'url',
+      lyricUrl: `/api/plugin/songloft-plugin-subsonic/lists/${encodeURIComponent(config.name)}/lyric?artist=${encodeURIComponent(item.artist || '')}&title=${encodeURIComponent(item.title || item.name || '')}`
     })))
   } catch (e) {
     return jsonResponse({ error: String(e) }, 500)
+  }
+})
+
+// 歌词抓取
+router.get('/lists/:id/lyric', async (req: HTTPRequest, params) => {
+  const config = await getConfig(params.id)
+  if (!config) return jsonResponse({ error: 'Config not found' }, 404)
+  
+  let artist = ''
+  let title = ''
+  if (req.query) {
+    const artistMatch = req.query.match(/(?:^|&)artist=([^&]*)/)
+    if (artistMatch) artist = decodeURIComponent(artistMatch[1])
+    
+    const titleMatch = req.query.match(/(?:^|&)title=([^&]*)/)
+    if (titleMatch) title = decodeURIComponent(titleMatch[1])
+  }
+  
+  try {
+    const lyric = await getLyrics(config, artist, title)
+    return jsonResponse({
+      code: 0,
+      data: {
+        lyric: lyric
+      },
+      message: 'success'
+    })
+  } catch (e) {
+    // 即使失败也返回标准结构但 code != 0
+    return jsonResponse({ code: 1, message: String(e) })
   }
 })
 

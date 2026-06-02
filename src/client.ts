@@ -203,3 +203,14 @@ export async function getRandomSongs(config: SubsonicConfig, size: number = 50):
   return Array.isArray(songs) ? songs : [songs]
 }
 
+export async function getLyrics(config: SubsonicConfig, artist: string, title: string): Promise<string> {
+  const res = await fetch(buildUrl(config, 'getLyrics', { artist, title }))
+  if (!res.ok) throw new Error('Failed to get lyrics')
+  const data = await res.json()
+  if (data['subsonic-response']?.status !== 'ok') {
+    throw new Error('API Error: ' + JSON.stringify(data))
+  }
+  const lyricValue = data['subsonic-response']?.lyrics?.value
+  return lyricValue || ''
+}
+
