@@ -252,7 +252,7 @@ function renderItems(items, title) {
 
         // Trailing section (Import button)
         let trailingHtml = ''
-        if (!isSelectMode && item.type !== 'directory') {
+        if (item.type !== 'directory') {
             trailingHtml = `<button class="btn-icon" title="导入此曲" style="color:var(--md-primary);" onclick="event.stopPropagation(); window._importSingle('${item.id}')"><span class="material-symbols-outlined">add_circle</span></button>`
         }
 
