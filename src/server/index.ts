@@ -250,16 +250,30 @@ const handleGetRandomSongs: Handler = async (_req, query) => {
 
 function songToSubsonic(s: any) {
   const fp = s.file_path || s.filePath || ''
+  const suffix = fp.split('.').pop() || 'mp3'
+  const mimeMap: Record<string, string> = {
+    mp3: 'audio/mpeg', flac: 'audio/flac', m4a: 'audio/mp4',
+    ogg: 'audio/ogg', wav: 'audio/wav', wma: 'audio/x-ms-wma', aac: 'audio/aac',
+  }
   return {
     id: String(s.id),
+    parent: '1',
     title: s.title || '',
     artist: s.artist || '',
     album: s.album || '',
+    year: s.year || 0,
+    genre: s.genre || '',
     duration: s.duration || 0,
-    isDir: false,
+    size: s.file_size || 0,
+    bitRate: s.bit_rate || 320,
+    contentType: mimeMap[suffix] || 'audio/mpeg',
+    suffix,
+    path: fp || `${s.artist || 'Unknown'}/${s.title || 'Unknown'}.${suffix}`,
+    isDir: 'false',
+    isVideo: 'false',
     coverArt: String(s.id),
     type: 'music',
-    suffix: fp.split('.').pop() || 'mp3',
+    created: s.added_at || s.updated_at || '',
   }
 }
 
