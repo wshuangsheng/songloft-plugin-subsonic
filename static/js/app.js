@@ -562,7 +562,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     })
 
-    document.getElementById('serverUrl').addEventListener('click', () => {
+    document.getElementById('copyUrlBtn').addEventListener('click', () => {
         const text = document.getElementById('serverUrl').textContent
         navigator.clipboard.writeText(text).then(() => showSnackbar('已复制连接地址'))
     })
