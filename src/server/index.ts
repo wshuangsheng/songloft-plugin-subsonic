@@ -97,6 +97,68 @@ const handleGetAlbumList2: Handler = async (_req, query) => {
   return { statusCode: 200, headers: { 'Content-Type': r.contentType }, body: r.body }
 }
 
+const handleGetAlbum: Handler = async (_req, query) => {
+  const id = query.get('id') || ''
+  // id 格式为 "al-{songId}"，用该 song 的 album 名聚合同专辑歌曲
+  const seedId = parseInt(id.replace(/^al-/, ''))
+  if (isNaN(seedId)) {
+    const r = errorResponse(query, 10, 'Invalid album id')
+    return { statusCode: 200, headers: { 'Content-Type': r.contentType }, body: r.body }
+  }
+
+  const seedSong = await songloft.songs.getById(seedId)
+  if (!seedSong) {
+    const r = errorResponse(query, 70, 'Album not found')
+    return { statusCode: 200, headers: { 'Content-Type': r.contentType }, body: r.body }
+  }
+
+  const albumName = seedSong.album || 'Unknown'
+  const allSongs = await songloft.songs.list({ limit: 100000 })
+  const albumSongs = allSongs.filter(s => (s.album || 'Unknown') === albumName)
+
+  const r = okResponse(query, {
+    album: {
+      id,
+      name: albumName,
+      artist: seedSong.artist,
+      songCount: albumSongs.length,
+      song: albumSongs.map(s => songToSubsonic(s)),
+    }
+  })
+  return { statusCode: 200, headers: { 'Content-Type': r.contentType }, body: r.body }
+}
+
+const handleGetArtist: Handler = async (_req, query) => {
+  const id = query.get('id') || ''
+  const artistName = id.replace(/^ar-/, '')
+
+  const allSongs = await songloft.songs.list({ limit: 100000 })
+  const artistSongs = allSongs.filter(s => (s.artist || 'Unknown') === artistName)
+
+  // 按 album 聚合
+  const albumMap = new Map<string, { id: number; songCount: number }>()
+  for (const song of artistSongs) {
+    const album = song.album || 'Unknown'
+    if (!albumMap.has(album)) {
+      albumMap.set(album, { id: song.id, songCount: 0 })
+    }
+    albumMap.get(album)!.songCount++
+  }
+
+  const albums = Array.from(albumMap.entries()).map(([name, info]) => ({
+    id: `al-${info.id}`,
+    name,
+    artist: artistName,
+    songCount: info.songCount,
+    coverArt: `al-${info.id}`,
+  }))
+
+  const r = okResponse(query, {
+    artist: { id, name: artistName, albumCount: albums.length, album: albums }
+  })
+  return { statusCode: 200, headers: { 'Content-Type': r.contentType }, body: r.body }
+}
+
 // --- Search ---
 
 const handleSearch3: Handler = async (_req, query) => {
@@ -144,12 +206,12 @@ const handleGetCoverArt: Handler = async (_req, query) => {
 
 const handleGetPlaylists: Handler = async (_req, query) => {
   const playlists = await songloft.playlists.list()
-  const items = playlists.map(p => ({
+  const items = playlists.map((p: any) => ({
     id: String(p.id),
     name: p.name,
-    songCount: p.songCount,
+    songCount: p.song_count ?? p.songCount ?? 0,
     public: true,
-    coverArt: p.coverUrl || '',
+    coverArt: p.cover_url || p.coverUrl || '',
   }))
   const r = okResponse(query, { playlists: { playlist: items } })
   return { statusCode: 200, headers: { 'Content-Type': r.contentType }, body: r.body }
@@ -168,8 +230,9 @@ const handleGetPlaylist: Handler = async (_req, query) => {
   }
   const songs = await songloft.playlists.getSongs(id, { limit: 10000 })
   const entries = songs.map(s => songToSubsonic(s))
+  const pl: any = playlist
   const r = okResponse(query, {
-    playlist: { id: String(playlist.id), name: playlist.name, songCount: playlist.songCount, entry: entries }
+    playlist: { id: String(pl.id), name: pl.name, songCount: pl.song_count ?? pl.songCount ?? 0, entry: entries }
   })
   return { statusCode: 200, headers: { 'Content-Type': r.contentType }, body: r.body }
 }
@@ -186,6 +249,7 @@ const handleGetRandomSongs: Handler = async (_req, query) => {
 // --- Helpers ---
 
 function songToSubsonic(s: any) {
+  const fp = s.file_path || s.filePath || ''
   return {
     id: String(s.id),
     title: s.title || '',
@@ -195,7 +259,7 @@ function songToSubsonic(s: any) {
     isDir: false,
     coverArt: String(s.id),
     type: 'music',
-    suffix: (s.filePath || '').split('.').pop() || 'mp3',
+    suffix: fp.split('.').pop() || 'mp3',
   }
 }
 
@@ -212,6 +276,10 @@ const routes: Record<string, Handler> = {
   '/rest/getMusicFolders': handleGetMusicFolders,
   '/rest/getArtists.view': handleGetArtists,
   '/rest/getArtists': handleGetArtists,
+  '/rest/getArtist.view': handleGetArtist,
+  '/rest/getArtist': handleGetArtist,
+  '/rest/getAlbum.view': handleGetAlbum,
+  '/rest/getAlbum': handleGetAlbum,
   '/rest/getAlbumList2.view': handleGetAlbumList2,
   '/rest/getAlbumList2': handleGetAlbumList2,
   '/rest/search3.view': handleSearch3,
