@@ -531,9 +531,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.getElementById('serverUsername').value = data.username || ''
             }
         } catch {}
-        // 显示连接地址
+        // 显示连接地址（Subsonic 客户端填写到插件根路径即可，/rest 由客户端自动拼接）
         const base = window.location.origin + window.location.pathname.replace(/\/static\/.*|\/+$/, '')
-        document.getElementById('serverUrl').textContent = base + '/rest'
+        document.getElementById('serverUrl').textContent = base
     }
 
     document.getElementById('saveServerModeBtn').addEventListener('click', async () => {
