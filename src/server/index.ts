@@ -296,6 +296,31 @@ const handleGetRandomSongs: Handler = async (_req, query) => {
   return { statusCode: 200, headers: { 'Content-Type': r.contentType }, body: r.body }
 }
 
+// --- Genres ---
+
+const handleGetGenres: Handler = async (_req, query) => {
+  const songs = await songloft.songs.list({ limit: 100000 })
+  const genreMap = new Map<string, { songCount: number; albumCount: number }>()
+  const genreAlbums = new Map<string, Set<string>>()
+  for (const s of songs) {
+    const g = (s as any).genre || ''
+    if (!g) continue
+    if (!genreMap.has(g)) {
+      genreMap.set(g, { songCount: 0, albumCount: 0 })
+      genreAlbums.set(g, new Set())
+    }
+    genreMap.get(g)!.songCount++
+    genreAlbums.get(g)!.add((s as any).album || 'Unknown')
+  }
+  const genres = Array.from(genreMap.entries()).map(([name, info]) => ({
+    songCount: info.songCount,
+    albumCount: genreAlbums.get(name)!.size,
+    value: name,
+  }))
+  const r = okResponse(query, { genres: { genre: genres } })
+  return { statusCode: 200, headers: { 'Content-Type': r.contentType }, body: r.body }
+}
+
 // --- Helpers ---
 
 function songToSubsonic(s: any) {
@@ -362,6 +387,8 @@ const routes: Record<string, Handler> = {
   '/rest/getPlaylist': handleGetPlaylist,
   '/rest/getRandomSongs.view': handleGetRandomSongs,
   '/rest/getRandomSongs': handleGetRandomSongs,
+  '/rest/getGenres.view': handleGetGenres,
+  '/rest/getGenres': handleGetGenres,
 }
 
 // --- Server config management (exposed via normal auth routes) ---
