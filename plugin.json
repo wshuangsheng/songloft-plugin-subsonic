@@ -18,7 +18,8 @@
     "fs:music"
   ],
   "publicPaths": ["/rest"],
-  "updateUrl": "https://raw.githubusercontent.com/songloft-org/songloft-plugin-subsonic/main/manifest.json",
+  "updateUrl": "https://raw.githubusercontent.com/songloft-org/songloft-plugin-subsonic/main/plugin.json",
+  "download_url": "https://github.com/songloft-org/songloft-plugin-subsonic/releases/download/v1.0.4/subsonic.jsplugin.zip",
   "entryHash": "",
   "zipHash": ""
 }
