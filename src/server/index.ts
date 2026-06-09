@@ -190,16 +190,26 @@ const handleStream: Handler = async (_req, query) => {
 
 const handleGetCoverArt: Handler = async (_req, query) => {
   const id = query.get('id') || ''
+  const token = await songloft.plugin.getToken()
+
+  // 歌单封面：pl-{playlistId}
+  if (id.startsWith('pl-')) {
+    const plId = id.slice(3)
+    return {
+      statusCode: 302,
+      headers: { 'Location': `/api/v1/playlists/${plId}/cover?access_token=${token}` },
+      body: ''
+    }
+  }
+
+  // 歌曲/专辑封面：{songId} 或 al-{songId}
   const numId = parseInt(id.replace(/^(al|ar)-/, ''))
   if (isNaN(numId)) {
     return { statusCode: 404, headers: {}, body: '' }
   }
-  // 重定向到已有的封面端点（带 plugin token 认证）
-  const token = await songloft.plugin.getToken()
-  const coverUrl = `/api/v1/songs/${numId}/cover?access_token=${token}`
   return {
     statusCode: 302,
-    headers: { 'Location': coverUrl },
+    headers: { 'Location': `/api/v1/songs/${numId}/cover?access_token=${token}` },
     body: ''
   }
 }
@@ -251,7 +261,7 @@ const handleGetPlaylists: Handler = async (_req, query) => {
     name: p.name,
     songCount: p.song_count ?? p.songCount ?? 0,
     public: true,
-    coverArt: p.cover_url || p.coverUrl || '',
+    coverArt: (p.cover_url || p.coverUrl) ? `pl-${p.id}` : '',
   }))
   const r = okResponse(query, { playlists: { playlist: items } })
   return { statusCode: 200, headers: { 'Content-Type': r.contentType }, body: r.body }
