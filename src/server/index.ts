@@ -304,16 +304,17 @@ const handleGetSong: Handler = async (_req, query) => {
   return { statusCode: 200, headers: { 'Content-Type': r.contentType }, body: r.body }
 }
 
-// --- Starred ---
+// --- Starred（对接内置收藏歌单 id=1）---
 
 const handleGetStarred: Handler = async (_req, query) => {
-  // 返回空收藏（暂无 star 状态持久化）
-  const r = okResponse(query, { starred: { song: [], album: [], artist: [] } })
+  const songs = await songloft.playlists.getSongs(1, { limit: 100000 })
+  const r = okResponse(query, { starred: { song: songs.map(s => songToSubsonic(s)), album: [], artist: [] } })
   return { statusCode: 200, headers: { 'Content-Type': r.contentType }, body: r.body }
 }
 
 const handleGetStarred2: Handler = async (_req, query) => {
-  const r = okResponse(query, { starred2: { song: [], album: [], artist: [] } })
+  const songs = await songloft.playlists.getSongs(1, { limit: 100000 })
+  const r = okResponse(query, { starred2: { song: songs.map(s => songToSubsonic(s)), album: [], artist: [] } })
   return { statusCode: 200, headers: { 'Content-Type': r.contentType }, body: r.body }
 }
 
