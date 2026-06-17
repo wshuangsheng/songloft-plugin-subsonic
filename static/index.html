@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Subsonic</title>
     <link rel="stylesheet" href="static/css/style.css">
 
@@ -29,23 +29,23 @@
                 <div class="card-body">
                     <div class="form-group">
                         <label class="form-label">配置名称</label>
-                        <input type="text" class="text-field" id="subName" placeholder="例如：我的 Navidrome">
+                        <input type="text" class="text-field" id="subName" placeholder="例如：我的 Navidrome" aria-label="配置名称">
                     </div>
                     <div class="form-group" style="margin-top:12px">
                         <label class="form-label">服务器地址</label>
-                        <input type="text" class="text-field" id="subUrl" placeholder="例如：https://music.example.com">
+                        <input type="text" class="text-field" id="subUrl" placeholder="例如：https://music.example.com" aria-label="服务器地址">
                     </div>
                     <div class="form-group" style="margin-top:12px">
                         <label class="form-label">用户名</label>
-                        <input type="text" class="text-field" id="subUsername" placeholder="用户名">
+                        <input type="text" class="text-field" id="subUsername" placeholder="用户名" aria-label="用户名">
                     </div>
                     <div class="form-group" style="margin-top:12px">
                         <label class="form-label">密码 / Token</label>
-                        <input type="password" class="text-field" id="subPassword" placeholder="密码 (或 Token 如果配置了 Salt)">
+                        <input type="password" class="text-field" id="subPassword" placeholder="密码 (或 Token 如果配置了 Salt)" aria-label="密码 / Token">
                     </div>
                     <div class="form-group" style="margin-top:12px">
                         <label class="form-label">Salt (选填)</label>
-                        <input type="text" class="text-field" id="subSalt" placeholder="如果使用 Token 认证，填写 Salt">
+                        <input type="text" class="text-field" id="subSalt" placeholder="如果使用 Token 认证，填写 Salt" aria-label="Salt">
                     </div>
                     <div class="toolbar" style="padding:16px 0 0;justify-content:flex-end;gap:8px">
                         <button class="btn-text" id="testServerBtn">
@@ -81,7 +81,7 @@
                 <div class="card-body" style="display:flex;flex-direction:column;gap:12px;">
                     <div style="display:flex;gap:12px;align-items:center;">
                         <span class="material-symbols-outlined" style="color:var(--md-primary)">storage</span>
-                        <select id="browserServerSelect" class="text-field" style="flex:1">
+                        <select id="browserServerSelect" class="text-field" style="flex:1" aria-label="选择服务器">
                             <option value="">请选择服务器...</option>
                         </select>
                     </div>
@@ -89,7 +89,7 @@
                     <!-- 发现与搜索区 -->
                     <div id="discoveryArea" style="display:none;flex-direction:column;gap:12px;">
                         <div style="display:flex;gap:8px;align-items:center;">
-                            <input type="text" class="text-field" id="searchInput" placeholder="搜索歌手、专辑、歌曲..." style="flex:1">
+                            <input type="text" class="text-field" id="searchInput" placeholder="搜索歌手、专辑、歌曲..." style="flex:1" aria-label="搜索歌手、专辑、歌曲">
                             <button class="btn-filled" id="searchBtn" style="padding:0 16px;">搜索</button>
                         </div>
                         <div class="chips-container" style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;">
@@ -135,17 +135,17 @@
                     <div class="form-group" style="display:flex;align-items:center;justify-content:space-between;">
                         <label class="form-label" style="margin:0;">启用服务端</label>
                         <label class="switch">
-                            <input type="checkbox" id="serverEnabled">
+                            <input type="checkbox" id="serverEnabled" aria-label="启用服务器">
                             <span class="switch-slider"></span>
                         </label>
                     </div>
                     <div class="form-group" style="margin-top:16px">
                         <label class="form-label">用户名</label>
-                        <input type="text" class="text-field" id="serverUsername" placeholder="admin">
+                        <input type="text" class="text-field" id="serverUsername" placeholder="admin" aria-label="用户名">
                     </div>
                     <div class="form-group" style="margin-top:12px">
                         <label class="form-label">密码</label>
-                        <input type="password" class="text-field" id="serverPassword" placeholder="设置连接密码">
+                        <input type="password" class="text-field" id="serverPassword" placeholder="设置连接密码" aria-label="密码">
                     </div>
                     <div class="toolbar" style="padding:16px 0 0;justify-content:flex-end;">
                         <button class="btn-filled" id="saveServerModeBtn">
@@ -179,16 +179,16 @@
     </div>
 
     <!-- Tab Bar -->
-    <nav class="tab-bar">
-        <button class="tab-item active" data-tab="servers">
+    <nav class="tab-bar" role="tablist">
+        <button class="tab-item active" data-tab="servers" role="tab">
             <span class="material-symbols-outlined">dns</span>
             <span>音乐源</span>
         </button>
-        <button class="tab-item" data-tab="browser">
+        <button class="tab-item" data-tab="browser" role="tab">
             <span class="material-symbols-outlined">library_music</span>
             <span>音乐库</span>
         </button>
-        <button class="tab-item" data-tab="server-mode">
+        <button class="tab-item" data-tab="server-mode" role="tab">
             <span class="material-symbols-outlined">cloud_upload</span>
             <span>服务端</span>
         </button>
@@ -212,7 +212,7 @@
     <div id="snackbar" class="snackbar"></div>
 
     <!-- Edit Server Dialog -->
-    <div id="editDialog" class="dialog-overlay">
+    <div id="editDialog" class="dialog-overlay" role="dialog" aria-modal="true">
         <div class="dialog" style="max-width: 400px;">
             <div class="dialog-title">编辑服务器</div>
             <div class="dialog-content">
@@ -222,19 +222,19 @@
                 </div>
                 <div class="form-group" style="margin-top:12px">
                     <label class="form-label">服务器地址</label>
-                    <input type="text" class="text-field" id="editUrl">
+                    <input type="text" class="text-field" id="editUrl" aria-label="服务器地址">
                 </div>
                 <div class="form-group" style="margin-top:12px">
                     <label class="form-label">用户名</label>
-                    <input type="text" class="text-field" id="editUsername">
+                    <input type="text" class="text-field" id="editUsername" aria-label="用户名">
                 </div>
                 <div class="form-group" style="margin-top:12px">
                     <label class="form-label">密码 / Token</label>
-                    <input type="password" class="text-field" id="editPassword" placeholder="留空则保持不变">
+                    <input type="password" class="text-field" id="editPassword" placeholder="留空则保持不变" aria-label="密码 / Token">
                 </div>
                 <div class="form-group" style="margin-top:12px">
                     <label class="form-label">Salt (选填)</label>
-                    <input type="text" class="text-field" id="editSalt">
+                    <input type="text" class="text-field" id="editSalt" aria-label="Salt">
                 </div>
             </div>
             <div class="dialog-actions">
@@ -245,7 +245,7 @@
     </div>
 
     <!-- Progress Dialog -->
-    <div id="progressDialog" class="dialog-overlay">
+    <div id="progressDialog" class="dialog-overlay" role="dialog" aria-modal="true">
         <div class="dialog" style="max-width: 320px;text-align:center;">
             <div class="dialog-title" id="progressTitle">正在处理</div>
             <div class="dialog-content" style="padding:24px 0;">
@@ -256,13 +256,13 @@
     </div>
 
     <!-- New Playlist Dialog -->
-    <div id="playlistDialog" class="dialog-overlay">
+    <div id="playlistDialog" class="dialog-overlay" role="dialog" aria-modal="true">
         <div class="dialog" style="max-width: 320px;">
             <div class="dialog-title">创建新歌单</div>
             <div class="dialog-content">
                 <div class="form-group">
                     <label class="form-label">歌单名称</label>
-                    <input type="text" class="text-field" id="playlistName" placeholder="例如：Subsonic精选">
+                    <input type="text" class="text-field" id="playlistName" placeholder="例如：Subsonic精选" aria-label="歌单名称">
                 </div>
             </div>
             <div class="dialog-actions">
